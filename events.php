@@ -1,6 +1,8 @@
 <?php
 // halaman CRUD event: tambah, cari/filter, edit, hapus
 
+// pastikan user sudah login sebelum akses halaman event
+require_once 'includes/auth.php';
 require_once __DIR__ . '/config/database.php';
 
 $pageTitle = 'Manajemen event';

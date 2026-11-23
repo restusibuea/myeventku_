@@ -81,14 +81,23 @@ $navItems = [
                     <?php endforeach; ?>
                 </nav>
 
-                <!-- Tombol Menu Mobile -->
-                <div class="flex items-center md:hidden">
+                <!-- Info User Login, Tombol Logout & Menu Mobile -->
+                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                        <i class="fa-regular fa-user text-slate-500" aria-hidden="true"></i>
+                        <span>Halo, <strong class="font-semibold text-slate-900"><?= htmlspecialchars($_SESSION['username'] ?? 'admin', ENT_QUOTES, 'UTF-8') ?></strong></span>
+                    </span>
+                    <a href="logout.php"
+                       class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 text-slate-700 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap">
+                        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                        <span>Logout</span>
+                    </a>
                     <button type="button"
                             id="mobileMenuBtn"
                             onclick="toggleMobileMenu()"
-                            class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100"
+                            class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100 cursor-pointer"
                             aria-label="Buka menu navigasi">
-                        <i class="fa-solid fa-bars"></i>
+                        <i class="fa-solid fa-bars" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
@@ -105,6 +114,19 @@ $navItems = [
                         <span><?= htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
                     </a>
                 <?php endforeach; ?>
+
+                <!-- Info User & Logout Mobile -->
+                <div class="pt-2 mt-2 border-t border-slate-200 flex items-center justify-between px-3 py-1.5">
+                    <span class="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                        <i class="fa-regular fa-user text-slate-500" aria-hidden="true"></i>
+                        <span>Halo, <strong class="font-semibold text-slate-900"><?= htmlspecialchars($_SESSION['username'] ?? 'admin', ENT_QUOTES, 'UTF-8') ?></strong></span>
+                    </span>
+                    <a href="logout.php"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 text-slate-700 text-xs font-medium transition-colors cursor-pointer">
+                        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
             </div>
         </div>
     </header>

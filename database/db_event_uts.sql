@@ -17,6 +17,7 @@ USE `db_event_uts`;
 -- hapus tabel lama dulu; participants duluan karena dia yang punya foreign key ke events
 DROP TABLE IF EXISTS `participants`;
 DROP TABLE IF EXISTS `events`;
+DROP TABLE IF EXISTS `users`;
 
 -- ----------------------------------------------------------------------------
 -- Tabel 1: events (Master Data Event Kampus)
@@ -79,3 +80,19 @@ INSERT INTO `participants` (`event_id`, `ticket_code`, `name`, `identity_no`, `e
 (3, 'EVT-2026-3002', 'Gloo', '240103007', 'gloo@telkomuniversity.ac.id', '082133445566', 'Terdaftar', NULL),
 (4, 'EVT-2026-4001', 'Grace', '250501008', 'grace@wbi.ac.id', '081311223355', 'Hadir', '2026-11-15 09:05:00'),
 (4, 'EVT-2026-4002', 'Dolor Sitamet', '250501009', 'dolorsitamet@usu.ac.id', '085299001122', 'Terdaftar', NULL);
+
+-- ----------------------------------------------------------------------------
+-- Tabel 3: users (Akun Login Admin & Pengguna)
+-- Password default akun admin: admin123 (hash password_hash PHP)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `username` VARCHAR(50) NOT NULL,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `role` ENUM('admin', 'user') NOT NULL DEFAULT 'user',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `unique_username` (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `users` (`username`, `password_hash`, `role`) VALUES
+('admin', '$2y$10$BrDXJY2gsqldg1gBpivkEeZh4KHGng69/XVq0r8CAEeC1KsBiFB6C', 'admin');

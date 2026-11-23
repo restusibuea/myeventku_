@@ -1,6 +1,8 @@
 <?php
 // halaman pendaftaran peserta: daftar, edit, batal, plus validasi kuota & anti dobel
 
+// pastikan user sudah login sebelum akses halaman peserta
+require_once 'includes/auth.php';
 require_once __DIR__ . '/config/database.php';
 
 $pageTitle = 'Pendaftaran peserta';
@@ -25,8 +27,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
+            // cek format email pakai fungsi bawaan PHP filter_var
+            // kalau formatnya salah (misal tidak ada @ atau domain), pendaftaran ditolak
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 setFlash('error', 'Format alamat email tidak valid. Contoh: nama@kampus.ac.id');
+                header('Location: participants.php?event_id=' . $eventId . '#form-daftar');
+                exit;
+            }
+
+            // cek nomor HP pakai ctype_digit: pastikan semua karakter hanya angka 0-9
+            // kalau ada huruf, spasi, tanda minus, atau simbol lain, langsung ditolak
+            if (!ctype_digit($phone)) {
+                setFlash('error', 'Nomor HP tidak valid! Hanya boleh diisi angka saja (contoh: 081234567890).');
                 header('Location: participants.php?event_id=' . $eventId . '#form-daftar');
                 exit;
             }
@@ -132,8 +144,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
+            // cek ulang format email saat edit biodata pakai filter_var
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 setFlash('error', 'Format email peserta tidak valid.');
+                header('Location: participants.php?edit=' . $participantId);
+                exit;
+            }
+
+            // cek nomor HP pakai ctype_digit agar saat edit tetap hanya angka 0-9
+            if (!ctype_digit($phone)) {
+                setFlash('error', 'Nomor HP tidak valid! Hanya boleh diisi angka saja (contoh: 081234567890).');
                 header('Location: participants.php?edit=' . $participantId);
                 exit;
             }
@@ -478,9 +498,10 @@ require_once __DIR__ . '/includes/header.php';
                 <input type="text"
                        id="phone"
                        name="phone"
+                       inputmode="numeric"
                        required
                        maxlength="25"
-                       placeholder="Masukkan nomor HP / WhatsApp..."
+                       placeholder="Contoh: 081234567890 (hanya angka)"
                        value="<?= htmlspecialchars($editParticipant['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                        class="w-full px-3.5 py-2 rounded-md border border-slate-300 text-sm focus:ring-1 focus:ring-slate-900 focus:border-slate-900 outline-none">
             </div>

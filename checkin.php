@@ -1,6 +1,8 @@
 <?php
 // halaman check-in: cari peserta pakai kode tiket/NIM, terus tandai Hadir
 
+// pastikan user sudah login sebelum akses halaman check-in
+require_once 'includes/auth.php';
 require_once __DIR__ . '/config/database.php';
 
 $pageTitle = 'Check-in cepat';

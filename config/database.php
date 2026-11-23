@@ -9,10 +9,21 @@ if (session_status() === PHP_SESSION_NONE) {
 // set ke WIB biar jam check-in yang kesimpan nggak meleset
 date_default_timezone_set('Asia/Jakarta');
 
-$dbHost    = '127.0.0.1';
-$dbName    = 'db_event_uts';
-$dbUser    = 'root';
-$dbPass    = '';
+// ambil setting database dari environment variable Wasmer (kalau kosong, pakai setting XAMPP lokal)
+$envHost = (string) (getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? ($_SERVER['DB_HOST'] ?? '')));
+$envPort = (string) (getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? ($_SERVER['DB_PORT'] ?? '')));
+$envName = (string) (getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? ($_SERVER['DB_NAME'] ?? '')));
+$envUser = (string) (getenv('DB_USERNAME') ?: ($_ENV['DB_USERNAME'] ?? ($_SERVER['DB_USERNAME'] ?? (getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? ($_SERVER['DB_USER'] ?? ''))))));
+$envPass = (string) (getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : ($_ENV['DB_PASSWORD'] ?? ($_SERVER['DB_PASSWORD'] ?? (getenv('DB_PASS') !== false ? getenv('DB_PASS') : ($_ENV['DB_PASS'] ?? ($_SERVER['DB_PASS'] ?? ''))))));
+
+// kalau DB_HOST atau DB_NAME terisi dari env, berarti aplikasi lagi jalan di hosting (seperti Wasmer)
+$isCloudHosting = ($envHost !== '' || $envName !== '');
+
+$dbHost    = $envHost !== '' ? $envHost : '127.0.0.1';
+$dbPort    = $envPort !== '' ? $envPort : '3306';
+$dbName    = $envName !== '' ? $envName : 'db_event_uts';
+$dbUser    = $envUser !== '' ? $envUser : 'root';
+$dbPass    = $isCloudHosting ? $envPass : '';
 $dbCharset = 'utf8mb4';
 
 // setting PDO yang dipakai di semua query
@@ -23,24 +34,26 @@ $pdoOptions = [
 ];
 
 try {
-    // konek dulu ke server MySQL tanpa pilih database, soalnya database-nya bisa jadi belum ada
-    $serverPdo = new PDO(
-        "mysql:host={$dbHost};charset={$dbCharset}",
-        $dbUser,
-        $dbPass,
-        $pdoOptions
-    );
+    // CREATE DATABASE cuma dijalanin di XAMPP lokal; di Wasmer databasenya sudah disiapin otomatis
+    if (!$isCloudHosting) {
+        $serverPdo = new PDO(
+            "mysql:host={$dbHost};port={$dbPort};charset={$dbCharset}",
+            $dbUser,
+            $dbPass,
+            $pdoOptions
+        );
 
-    // bikin database kalau belum ada
-    $serverPdo->exec(
-        "CREATE DATABASE IF NOT EXISTS `{$dbName}`
-         CHARACTER SET utf8mb4
-         COLLATE utf8mb4_unicode_ci"
-    );
+        // bikin database kalau belum ada
+        $serverPdo->exec(
+            "CREATE DATABASE IF NOT EXISTS `{$dbName}`
+             CHARACTER SET utf8mb4
+             COLLATE utf8mb4_unicode_ci"
+        );
+    }
 
-    // baru konek beneran ke db_event_uts, koneksi $pdo ini yang dipakai di semua halaman
+    // konek ke database utama; koneksi $pdo ini yang dipakai di semua halaman
     $pdo = new PDO(
-        "mysql:host={$dbHost};dbname={$dbName};charset={$dbCharset}",
+        "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset={$dbCharset}",
         $dbUser,
         $dbPass,
         $pdoOptions
@@ -82,6 +95,36 @@ try {
                 ON UPDATE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
+
+    // tabel users untuk autentikasi login, dibuat otomatis kalau belum ada
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `users` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `username` VARCHAR(50) NOT NULL,
+            `password_hash` VARCHAR(255) NOT NULL,
+            `role` ENUM('admin', 'user') NOT NULL DEFAULT 'user',
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY `unique_username` (`username`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    // cek isi tabel users, kalau masih kosong bikinin akun admin default
+    $stmtCheckUsers = $pdo->prepare('SELECT COUNT(*) FROM users');
+    $stmtCheckUsers->execute();
+    $existingUserCount = (int) $stmtCheckUsers->fetchColumn();
+
+    if ($existingUserCount === 0) {
+        // hash password admin123 pakai password_hash() biar aman dan nggak kesimpan plaintext
+        $stmtInsertAdmin = $pdo->prepare('
+            INSERT INTO users (username, password_hash, role)
+            VALUES (:username, :password_hash, :role)
+        ');
+        $stmtInsertAdmin->execute([
+            'username'      => 'admin',
+            'password_hash' => password_hash('admin123', PASSWORD_DEFAULT),
+            'role'          => 'admin',
+        ]);
+    }
 
     // seed cuma jalan kalau tabel events masih kosong, jadi data yang sudah ada nggak ketimpa
     $stmtCheckSeed = $pdo->prepare('SELECT COUNT(*) FROM events');
@@ -262,7 +305,7 @@ try {
     http_response_code(500);
     echo '<div style="font-family:sans-serif;max-width:600px;margin:40px auto;padding:20px;border:1px solid #fca5a5;background:#fef2f2;color:#991b1b;border-radius:6px;">';
     echo '<h2 style="margin-top:0;">Koneksi Database Gagal</h2>';
-    echo '<p>Pastikan layanan <strong>MySQL</strong> di XAMPP/Laragon sudah aktif (port 3306).</p>';
+    echo '<p>Pastikan layanan <strong>MySQL</strong> di XAMPP/Laragon aktif atau konfigurasi environment database hosting sudah benar.</p>';
     echo '<p style="font-size:13px;color:#7f1d1d;">Detail teknis: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p>';
     echo '</div>';
     exit;

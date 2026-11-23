@@ -1,6 +1,8 @@
 <?php
 // dashboard: ringkasan angka event & peserta, progres kuota tiap event, sama pendaftar terbaru
 
+// pastikan user sudah login sebelum akses dashboard
+require_once 'includes/auth.php';
 require_once __DIR__ . '/config/database.php';
 
 $pageTitle = 'Dashboard';
